@@ -30,50 +30,35 @@ $TWdir = getcwd;
 
 $TWdir =  join( "", $TWdir ,"/" );
 
+$projectName = "windows-replace-3.0.3";
+
 #path--> tools/
 $tools_Dir = join( "", $TWdir,"tools/" );
 
-
-#path--> tools/windows-replace/
-$tools_windowsReplace_Dir = join( "", $TWdir,"tools/windows-replace/" );
-
-
-#file--> tools/windows-replace/powerShell/*
-$powerShellAllDir = join( "", $TWdir,"tools/windows-replace/powerShell/*" );
-
 #path--> tools/windows-replace/powerShell/
-$powerShellDir = join( "", $TWdir,"tools/windows-replace/powerShell/" );
+$powerShellDir = join( "", $TWdir,"tools/$projectName/powerShell" );
+
 
 #file--> tools/windows-replace/powerShell/*.*
-@powerShellFiles = glob( $powerShellAllDir );
+@powerShellFiles = <$powerShellDir/*>;
 
-#file--> tools/*
+#file--> tools/windows-*.ps1 & tools/windows-*.pl
 @TWtoolsFile = replace_head(@powerShellFiles);
-
-#file--> tools/windows-replace/powerShell/windows-bootstrap.ps1
-$windowsBootstrapFile =  join( "", $powerShellDir,"windows-bootstrap.ps1" );
 
 #file--> ./windows-bootstrap.ps1
 $TWwindowsBootstrapFile =  join( "", $TWdir,"windows-bootstrap.ps1" );
 
+#file--> tools/windows-replace/powerShell/windows-bootstrap.ps1
+$windowsBootstrapFile =  join( "", $powerShellDir,"/windows-bootstrap.ps1" );
 
 if ($op eq "-spouting")
 {	
 	use File::Copy;
+	#Copy the windowsBootstrap file to the home directory.
+	copy $windowsBootstrapFile  ,$TWdir or warn 'copy failed.';
 	for($a = 0;$a < @powerShellFiles;$a = $a + 1)
 	{
-
-		if($windowsBootstrapFile eq $powerShellFiles[$a] )
-		{
-			#将windowsBootstrap文件拷贝到主目录下
-			copy $windowsBootstrapFile  ,$TWdir or warn 'copy failed.';
-		}
-		else
-		{
-			#拷贝到tools目录下
-			copy $powerShellFiles[$a]  ,$tools_Dir or warn 'copy failed.';
-		}
-
+		copy $powerShellFiles[$a]  ,$tools_Dir or warn 'copy failed.';
 	}
 
 }
@@ -93,4 +78,5 @@ else{
 	print " -suction : Bring Windows dependencies back into the tools folder.\n";
 	exit;
 }
+
 
