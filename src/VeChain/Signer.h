@@ -8,7 +8,7 @@
 
 #include "Transaction.h"
 
-#include "../Data.h"
+#include "Data.h"
 #include "../Hash.h"
 #include "../PrivateKey.h"
 
@@ -32,8 +32,3 @@ class Signer {
 };
 
 } // namespace TW::VeChain
-
-/// Wrapper for C interface.
-struct TWVeChainSigner {
-    TW::VeChain::Signer impl;
-};

@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "Coins.h"
-#include "../Data.h"
+#include "Data.h"
 #include "../Ethereum/Address.h"
 
 namespace TW::Theta {
@@ -39,17 +39,17 @@ class TxOutput {
 
 class Transaction {
   public:
-    Coins fee;
+    Coins _fee;
     std::vector<TxInput> inputs;
     std::vector<TxOutput> outputs;
 
     Transaction() = default;
     Transaction(Coins fee, std::vector<TxInput> inputs, std::vector<TxOutput> outputs)
-        : fee(std::move(fee)), inputs(std::move(inputs)), outputs(std::move(outputs)) {}
+        : _fee(std::move(fee)), inputs(std::move(inputs)), outputs(std::move(outputs)) {}
 
     Transaction(Ethereum::Address from, Ethereum::Address to,
-                uint256_t thetaAmount, uint256_t tfuelAmount, uint64_t sequence,
-                uint256_t feeAmount = 1000000000000);
+                const uint256_t& thetaAmount, const uint256_t& tfuelAmount, uint64_t sequence,
+                const uint256_t& feeAmount = 1000000000000);
 
     /// Encodes the transaction
     Data encode() const noexcept;

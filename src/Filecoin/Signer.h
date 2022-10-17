@@ -8,7 +8,7 @@
 
 #include "Transaction.h"
 
-#include "../Data.h"
+#include "Data.h"
 #include "../Hash.h"
 #include "../PrivateKey.h"
 #include "../proto/Filecoin.pb.h"
@@ -31,8 +31,3 @@ class Signer {
 };
 
 } // namespace TW::Filecoin
-
-/// Wrapper for C interface.
-struct TWFilecoinSigner {
-    TW::Filecoin::Signer impl;
-};

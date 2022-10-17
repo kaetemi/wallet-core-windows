@@ -1,4 +1,4 @@
-// Copyright © 2017-2021 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -21,16 +21,16 @@ static const CoinInfo defaultsForMissing = {
     TWBlockchainBitcoin,
     TWPurposeBIP44,
     TWCurveNone,
-    TWHDVersionNone,
-    TWHDVersionNone,
-    "",
+    {Derivation()},
     TWPublicKeyTypeSECP256k1,
     0,
     0,
     0,
     TWHRPUnknown,
-    Hash::sha256ripemd,
-    Hash::sha256d,
+    "",
+    Hash::HasherSha256ripemd,
+    Hash::HasherSha256d,
+    Hash::HasherSha256ripemd,
     "?",
     2,
     "",
@@ -46,20 +46,28 @@ const CoinInfo getCoinInfo(TWCoinType coin) {
         case TWCoinType<%= format_name(coin['name']) %>:
             return CoinInfo {
                 "<%= coin['id'] %>",
-                <% if coin['displayName'].nil? -%>"<%= coin['name'] %>"<% else -%>"<%= coin['displayName'] %>"<% end -%>,
+                "<%= coin_name(coin) %>",
                 TWBlockchain<%= format_name(coin['blockchain']) %>,
-                TWPurposeBIP<%= /^m\/(\d+)'?(\/\d+'?)+$/.match(coin['derivationPath'])[1] %>,
+                TWPurposeBIP<%= /^m\/(\d+)'?(\/\d+'?)+$/.match(derivation_path(coin))[1] %>,
                 TWCurve<%= format_name(coin['curve']) %>,
-                TWHDVersion<% if coin['xpub'].nil? -%>None<% else -%><%= format_name(coin['xpub']) %><% end -%>,
-                TWHDVersion<% if coin['xprv'].nil? -%>None<% else -%><%= format_name(coin['xprv']) %><% end -%>,
-                "<%= coin['derivationPath'] %>",
+                {
+                    <% coin['derivation'].each do |deriv| -%>{
+                        <%= derivation_enum_name(deriv, coin) %>,
+                        "<%= deriv['path'] %>",
+                        "<%= derivation_name(deriv) %>",
+                        TWHDVersion<% if deriv['xpub'].nil? -%>None<% else -%><%= format_name(deriv['xpub']) %><% end -%>,
+                        TWHDVersion<% if deriv['xprv'].nil? -%>None<% else -%><%= format_name(deriv['xprv']) %><% end -%>,
+                    },
+                <% end -%>},
                 TWPublicKeyType<%= format_name(coin['publicKeyType']) %>,
                 <% if coin['staticPrefix'].nil? -%>0<% else -%><%= coin['staticPrefix'] %><% end -%>,
                 <% if coin['p2pkhPrefix'].nil? -%>0<% else -%><%= coin['p2pkhPrefix'] %><% end -%>,
                 <% if coin['p2shPrefix'].nil? -%>0<% else -%><%= coin['p2shPrefix'] %><% end -%>,
                 TWHRP<% if coin['hrp'].nil? -%>Unknown<% else -%><%= format_name(coin['name']) %><% end -%>,
-                Hash::<% if coin['publicKeyHasher'].nil? -%>sha256ripemd<% else -%><%= coin['publicKeyHasher'] %><% end -%>,
-                Hash::<% if coin['base58Hasher'].nil? -%>sha256d<% else -%><%= coin['base58Hasher'] %><% end -%>,
+                "<%= coin['chainId'] %>",
+                Hash::Hasher<% if coin['publicKeyHasher'].nil? -%>Sha256ripemd<% else -%><%= camel_case(coin['publicKeyHasher']) %><% end -%>,
+                Hash::Hasher<% if coin['base58Hasher'].nil? -%>Sha256d<% else -%><%= camel_case(coin['base58Hasher']) %><% end -%>,
+                Hash::Hasher<% if coin['addressHasher'].nil? -%>Sha256ripemd<% else -%><%= camel_case(coin['addressHasher']) %><% end -%>,
                 "<%= coin['symbol'] %>",
                 <%= coin['decimals'] %>,
                 "<%= explorer_tx_url(coin) %>",

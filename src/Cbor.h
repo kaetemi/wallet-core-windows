@@ -11,6 +11,8 @@
 #include <stdexcept>
 #include <string>
 #include <memory>
+#include <vector>
+#include <map>
 
 namespace TW::Cbor {
 
@@ -38,9 +40,11 @@ public:
     /// encode an array of elements (of different types)
     static Encode array(const std::vector<Encode>& elems);
     /// encode a map
-    static Encode map(const std::vector<std::pair<Encode, Encode>>& elems);
+    static Encode map(const std::map<Encode, Encode>& elems);
     /// encode a tag and following element
     static Encode tag(uint64_t value, const Encode& elem);
+    /// encode a null value (special)
+    static Encode null();
 
     /// Stateful building (for indefinite length)
     /// Start an indefinite-length array
@@ -52,21 +56,27 @@ public:
 
     /// Create from raw content, must be valid CBOR data, may throw
     static Encode fromRaw(const TW::Data& rawData);
+    const Data& getDataInternal() const { return _data; }
 
 private:
     Encode() {}
-    Encode(const TW::Data& rawData) : data(rawData) {}
+    Encode(const TW::Data& rawData) : _data(rawData) {}
     /// Append types + value, on variable number of bytes (1..8). Return object to support chain syntax.
     Encode appendValue(byte majorType, uint64_t value);
-    inline Encode append(const TW::Data& data) { TW::append(this->data, data); return *this; }
+    inline Encode append(const TW::Data& data) { TW::append(_data, data); return *this; }
     void appendIndefinite(byte majorType);
 
 private:
     /// Encoded data is stored here, always well-formed, but my be partial.
-    TW::Data data;
+    TW::Data _data;
     /// number of currently open indefinite buildingds (0, 1, or more for nested)
     int openIndefCount = 0;
 };
+
+/// Comparator, needed for map keys
+inline bool operator<(const Encode& lhs, const Encode& rhs) {
+    return lhs.getDataInternal() < rhs.getDataInternal();
+}
 
 /// CBOR Decoder and container for data for decoding.  Contains reference to read-only CBOR data.
 /// See CborTests.cpp for usage.

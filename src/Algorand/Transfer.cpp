@@ -1,4 +1,4 @@
-// Copyright © 2017-2021 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -6,10 +6,8 @@
 
 #include "Transfer.h"
 #include "BinaryCoding.h"
-#include "../HexCoding.h"
 
-using namespace TW;
-using namespace TW::Algorand;
+namespace TW::Algorand {
 
 Data Transfer::serialize() const {
     /* Algorand transaction is encoded with msgpack
@@ -34,11 +32,17 @@ Data Transfer::serialize() const {
         // note is optional
         size += 1;
     }
+    // don't encode 0 amount
+    if (amount == 0) {
+        size -= 1;
+    }
     data.push_back(0x80 + size);
 
     // encode fields one by one (sorted by name)
-    encodeString("amt", data);
-    encodeNumber(amount, data);
+    if (amount > 0) {
+        encodeString("amt", data);
+        encodeNumber(amount, data);
+    }
 
     encodeString("fee", data);
     encodeNumber(fee, data);
@@ -70,3 +74,5 @@ Data Transfer::serialize() const {
     encodeString(type, data);
     return data;
 }
+
+} // namespace TW::Algorand

@@ -5,7 +5,6 @@
 // file LICENSE at the root of the source code distribution tree.
 
 #include "../Base58.h"
-#include "../Hash.h"
 #include "../HexCoding.h"
 #include "Transaction.h"
 
@@ -13,12 +12,12 @@
 
 #include <ctime>
 #include <stdexcept>
+#include <cassert>
 
-using namespace TW;
-using namespace TW::EOS;
-using json = nlohmann::json;
+namespace TW::EOS {
 
-Signature::Signature(const Data& sig, Type type) : data(sig), type(type) {
+Signature::Signature(const Data& sig, Type type)
+    : data(sig), type(type) {
     if (sig.size() != DataSize) {
         throw std::invalid_argument("Invalid signature size!");
     }
@@ -54,7 +53,7 @@ std::string Signature::string() const noexcept {
     // drop the subPrefix and append the checksum to the bufer
     buffer.resize(DataSize);
 
-    for(size_t i = 0; i < ChecksumSize; i++) {
+    for (size_t i = 0; i < ChecksumSize; i++) {
         buffer.push_back(hash[i]);
     }
 
@@ -85,7 +84,7 @@ void Transaction::setReferenceBlock(const Data& refBlockId) {
     refBlockPrefix = decode32LE(refBlockId.data() + 8);
 }
 
-void Transaction::serialize(Data& os) const noexcept{
+void Transaction::serialize(Data& os) const noexcept {
 
     encode32LE(expiration, os);
     encode16LE(refBlockNumber, os);
@@ -99,14 +98,19 @@ void Transaction::serialize(Data& os) const noexcept{
     encodeCollection(transactionExtensions, os);
 }
 
-json Transaction::serialize() const {
+std::string Transaction::formatDate(int32_t date) {
+    // format is "2022-06-02T08:53:20", always 19 characters long
+    constexpr size_t DateSize = 19;
+    constexpr size_t BufferSize = DateSize + 1;
+    char formattedDate[BufferSize];
+    auto time = static_cast<time_t>(date);
+    const size_t len = strftime(formattedDate, BufferSize, "%FT%T", std::gmtime(&time));
+    assert(len == DateSize);
+    return {formattedDate, len};
+}
 
-    // get a formatted date
-    char formattedDate[20];
-    time_t time = expiration;
-    if (strftime(formattedDate, 19, "%FT%T", std::gmtime(&time)) != 19) {
-        std::runtime_error("Error creating a formatted string!");
-    }
+json Transaction::serialize() const {
+    const auto expirationDateFormatted = formatDate(expiration);
 
     // create a json array of signatures
     json sigs = json::array();
@@ -118,7 +122,7 @@ json Transaction::serialize() const {
     json obj;
     obj["ref_block_num"] = refBlockNumber;
     obj["ref_block_prefix"] = refBlockPrefix;
-    obj["expiration"] = std::string(formattedDate, 19);
+    obj["expiration"] = expirationDateFormatted;
     obj["max_net_usage_words"] = maxNetUsageWords;
     obj["max_cpu_usage_ms"] = maxCPUUsageInMS;
     obj["delay_sec"] = delaySeconds;
@@ -130,3 +134,5 @@ json Transaction::serialize() const {
 
     return obj;
 }
+
+} // namespace TW::EOS

@@ -8,7 +8,7 @@
 
 #include "RLP.h"
 #include "Transaction.h"
-#include "../Data.h"
+#include "Data.h"
 #include "../Hash.h"
 #include "../PrivateKey.h"
 #include "../proto/Ethereum.pb.h"
@@ -34,6 +34,8 @@ class Signer {
 
     /// Signs the given transaction.
     static Signature sign(const PrivateKey& privateKey, const uint256_t& chainID, std::shared_ptr<TransactionBase> transaction) noexcept;
+    /// Compiles a Proto::SigningInput transaction, with external signature
+    static Proto::SigningOutput compile(const Proto::SigningInput& input, const Data& signature) noexcept;
 
   public:
     /// build Transaction from signing input
@@ -41,21 +43,20 @@ class Signer {
 
     /// Signs a hash with the given private key for the given chain identifier.
     ///
-    /// @returns the r, s, and v values of the transaction signature
+    /// \returns the r, s, and v values of the transaction signature
     static Signature sign(const PrivateKey& privateKey, const Data& hash, bool includeEip155, const uint256_t& chainID) noexcept;
 
     /// Break up the signature into the R, S, and V values.
-    /// @returns the r, s, and v values of the transaction signature
-    static Signature signatureDataToStruct(const Data& signature) noexcept;
+    /// \returns the r, s, and v values of the transaction signature
+    static Signature signatureDataToStruct(const Data& signature, bool includeEip155, const uint256_t& chainID) noexcept;
+
+    /// Break up the signature into the R, S, and V values, with no replay protection.
+    /// \returns the r, s, and v values of the transaction signature
+    static Signature signatureDataToStructSimple(const Data& signature) noexcept;
 
     /// Break up the signature into the R, S, and V values, and include chainID in V for replay protection (Eip155)
-    /// @returns the r, s, and v values of the transaction signature
+    /// \returns the r, s, and v values of the transaction signature
     static Signature signatureDataToStructWithEip155(const uint256_t& chainID, const Data& signature) noexcept;
 };
 
 } // namespace TW::Ethereum
-
-/// Wrapper for C interface.
-struct TWEthereumSigner {
-    TW::Ethereum::Signer impl;
-};

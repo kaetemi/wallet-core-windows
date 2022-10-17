@@ -1,0 +1,5 @@
+dist/
+generated/
+wallet-core.d.ts
+lib/wallet-core.js
+lib/wallet-core.wasm

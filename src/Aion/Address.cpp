@@ -5,10 +5,9 @@
 // file LICENSE at the root of the source code distribution tree.
 
 #include "Address.h"
-#include "../Hash.h"
 #include "../HexCoding.h"
 
-using namespace TW::Aion;
+namespace TW::Aion {
 
 bool Address::isValid(const std::string& string) {
     const auto data = parse_hex(string);
@@ -40,3 +39,5 @@ Address::Address(const PublicKey& publicKey) {
 std::string Address::string() const {
     return "0x" + hex(bytes);
 }
+
+} // namespace TW::Aion

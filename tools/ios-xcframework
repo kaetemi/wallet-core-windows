@@ -5,8 +5,10 @@
 
 set -e
 
-patch build/local/src/protobuf/protobuf-3.14.0/src/google/protobuf/stubs/common.cc swift/protobuf.patch
+echo "Building Docc..."
+tools/ios-doc
 
+echo "Building xcframework..."
 pushd swift
 fastlane ios xcframework
 popd

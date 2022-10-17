@@ -1,4 +1,4 @@
-package com.trustwalval.core.app.blockchains.cosmos
+package com.trustwallet.core.app.blockchains.cosmos
 
 import android.util.Log
 import com.google.protobuf.ByteString
@@ -40,7 +40,7 @@ class TestKavaTransactions {
         }.build()
 
         val feeAmount = Cosmos.Amount.newBuilder().apply {
-            amount = 100
+            amount = "100"
             denom = "ukava"
         }.build()
 

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "../Data.h"
+#include "Data.h"
 #include "Action.h"
 #include "Prefixes.h"
 
@@ -68,5 +68,7 @@ public:
     void setReferenceBlock(const Data& referenceBlockId);
 
     static const int32_t ExpirySeconds = 30;
+    /// Get formatted date
+    static std::string formatDate(int32_t date);
 };
 } // namespace TW::EOS

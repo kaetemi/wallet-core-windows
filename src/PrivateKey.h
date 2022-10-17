@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -9,6 +9,7 @@
 #include "Data.h"
 #include "PublicKey.h"
 
+#include <TrustWalletCore/TWPrivateKeyType.h>
 #include <TrustWalletCore/TWCurve.h>
 
 namespace TW {
@@ -16,16 +17,22 @@ namespace TW {
 class PrivateKey {
   public:
     /// The number of bytes in a private key.
-    static const size_t size = 32;
-    /// The number of bytes in an extended private key.
-    static const size_t extendedSize = 3 * 32;
+    static const size_t _size = 32;
+    /// The number of bytes in a Cardano key (two extended ed25519 keys + chain code)
+    static const size_t cardanoKeySize = 2 * 3 * 32;
 
-    /// The private key bytes.
+    /// The private key bytes:
+    /// - common case: 'size' bytes
+    /// - double extended case: 'cardanoKeySize' bytes, key+extension+chainCode+second+secondExtension+secondChainCode
     Data bytes;
-    /// Optional extended part of the key (additional 32 bytes)
-    Data extensionBytes;
-    /// Optional chain code (additional 32 bytes)
-    Data chainCodeBytes;
+
+    /// Optional members for extended keys and second extended keys
+    Data key() const { return subData(bytes, 0, 32); }
+    Data extension() const { return subData(bytes, 32, 32); }
+    Data chainCode() const { return subData(bytes, 2*32, 32); }
+    Data secondKey() const { return subData(bytes, 3*32, 32); }
+    Data secondExtension() const { return subData(bytes, 4*32, 32); }
+    Data secondChainCode() const { return subData(bytes, 5*32, 32); }
 
     /// Determines if a collection of bytes makes a valid private key.
     static bool isValid(const Data& data);
@@ -33,14 +40,19 @@ class PrivateKey {
     /// Determines if a collection of bytes and curve make a valid private key.
     static bool isValid(const Data& data, TWCurve curve);
 
-    /// Initializes a private key with an array of bytes.  Size must be exact (normally 32, or 96 for extended)
+    // obtain private key type used by the curve/coin
+    static TWPrivateKeyType getType(TWCurve curve) noexcept;
+
+    /// Initializes a private key with an array of bytes.  Size must be exact (normally 32, or 192 for extended)
     explicit PrivateKey(const Data& data);
 
-    /// Initializes a private key from a string of bytes (convenience method).
+    /// Initializes a private key from a string of bytes.
     explicit PrivateKey(const std::string& data) : PrivateKey(TW::data(data)) {}
 
-    /// Initializes an extended private key with key, extended key, and chain code.
-    explicit PrivateKey(const Data& data, const Data& ext, const Data& chainCode);
+    /// Initializes a Cardano style key
+    explicit PrivateKey(
+        const Data& bytes1, const Data& extension1, const Data& chainCode1,
+        const Data& bytes2, const Data& extension2, const Data& chainCode2);
 
     PrivateKey(const PrivateKey& other) = default;
     PrivateKey& operator=(const PrivateKey& other) = default;
@@ -66,10 +78,10 @@ class PrivateKey {
 
     /// Signs a digest using the given ECDSA curve. The result is encoded with
     /// DER.
-    Data signAsDER(const Data& digest, TWCurve curve) const;
+    Data signAsDER(const Data& digest) const;
 
-    /// Signs a digest using given ECDSA curve, returns schnorr signature
-    Data signSchnorr(const Data& message, TWCurve curve) const;
+    /// Signs a digest using given ECDSA curve, returns Zilliqa schnorr signature
+    Data signZilliqa(const Data& message) const;
 
     /// Cleanup contents (fill with 0s), called before destruction
     void cleanup();

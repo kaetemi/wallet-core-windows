@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -45,8 +45,3 @@ class TAddress : public TW::Base58Address<22> {
 };
 
 } // namespace TW::Zcash
-
-/// Wrapper for C interface.
-struct TWZcashTAddress {
-    TW::Zcash::TAddress impl;
-};

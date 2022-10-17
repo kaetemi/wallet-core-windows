@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -6,10 +6,9 @@
 
 #include "Address.h"
 #include "AddressChecksum.h"
-#include "../Hash.h"
 #include "../HexCoding.h"
 
-using namespace TW::Ethereum;
+namespace TW::Ethereum {
 
 bool Address::isValid(const std::string& string) {
     if (string.size() != 42 || string[0] != '0' || string[1] != 'x') {
@@ -38,10 +37,12 @@ Address::Address(const PublicKey& publicKey) {
     if (publicKey.type != TWPublicKeyTypeSECP256k1Extended) {
         throw std::invalid_argument("Ethereum::Address needs an extended SECP256k1 public key.");
     }
-    const auto data = publicKey.hash({}, static_cast<Hash::HasherSimpleType>(Hash::keccak256), true);
+    const auto data = publicKey.hash({}, Hash::HasherKeccak256, true);
     std::copy(data.end() - Address::size, data.end(), bytes.begin());
 }
 
 std::string Address::string() const {
-    return checksumed(*this, ChecksumType::eip55);
+    return checksumed(*this);
 }
+
+} // namespace TW::Ethereum

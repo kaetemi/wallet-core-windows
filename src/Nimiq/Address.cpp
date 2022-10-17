@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -7,16 +7,12 @@
 #include "Address.h"
 
 #include "../Base32.h"
-#include "../Hash.h"
-#include "../HexCoding.h"
 
 #include <TrezorCrypto/blake2b.h>
 
 #include <algorithm>
-#include <cassert>
-#include <cmath>
 
-using namespace TW::Nimiq;
+namespace TW::Nimiq {
 
 static const char* BASE32_ALPHABET_NIMIQ = "0123456789ABCDEFGHJKLMNPQRSTUVXY";
 
@@ -150,3 +146,5 @@ static inline int check_add(int check, int num) {
         ;
     return (check + num) % 97;
 }
+
+} // namespace TW::Nimiq

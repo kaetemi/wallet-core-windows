@@ -5,6 +5,8 @@ require 'fileutils'
 require 'java_helper'
 require 'jni_helper'
 require 'swift_helper'
+require 'wasm_cpp_helper'
+require 'ts_helper'
 
 # Code generation
 class CodeGenerator
@@ -20,7 +22,7 @@ class CodeGenerator
   # Renders an enum template
   def render_swift_enum_template(file:, header:, template:, output_subfolder:, extension:)
     # split Enum to Enum.swift and Enum+Extension.swift (easier to support cocoapods subspec)
-    output_enum_subfolder = "#{output_subfolder + '/Enums'}"
+    output_enum_subfolder = "#{output_subfolder}/Enums"
     FileUtils.mkdir_p File.join(output_folder, output_enum_subfolder)
     has_extension = entity.properties.length > 0 || entity.methods.length > 0
     header = render(header)
@@ -39,7 +41,7 @@ class CodeGenerator
       code = +''
       code << header
       code << render('swift/enum_extension.erb')
-      path = File.expand_path(File.join(output_folder, output_subfolder, "#{file + '+Extension'}.#{extension}"))
+      path = File.expand_path(File.join(output_folder, output_subfolder, "#{file}+Extension.#{extension}"))
       File.write(path, code)
     end
   end
@@ -60,7 +62,7 @@ class CodeGenerator
         unless string.nil? || string.empty?
           code << "\n" unless header.nil?
           code << string
-  
+
           path = File.expand_path(File.join(output_folder, output_subfolder, "#{file}.#{extension}"))
           File.write(path, code)
         end
@@ -69,7 +71,7 @@ class CodeGenerator
   end
 
   def render_swift
-    render_template(header: 'swift/header.erb', template: 'swift.erb', output_subfolder: 'swift/Sources/Generated', extension: 'swift')
+    render_template(header: 'copyright_header.erb', template: 'swift.erb', output_subfolder: 'swift/Sources/Generated', extension: 'swift')
 
     framework_header = render('swift/TrustWalletCore.h.erb')
     framework_header_path = File.expand_path(File.join(output_folder, 'swift/Sources/Generated', 'WalletCore.h'))
@@ -81,11 +83,24 @@ class CodeGenerator
   end
 
   def render_jni_h
-    render_template(header: 'jni/header.erb', template: 'jni_h.erb', output_subfolder: 'jni/cpp/generated', extension: 'h')
+    render_template(header: 'copyright_header.erb', template: 'jni_h.erb', output_subfolder: 'jni/cpp/generated', extension: 'h')
   end
 
   def render_jni_c
-    render_template(header: 'jni/header.erb', template: 'jni_c.erb', output_subfolder: 'jni/cpp/generated', extension: 'c')
+    render_template(header: 'copyright_header.erb', template: 'jni_c.erb', output_subfolder: 'jni/cpp/generated', extension: 'c')
+  end
+
+  def render_wasm_h
+    render_template(header: 'copyright_header.erb', template: 'wasm_h.erb', output_subfolder: 'wasm/src/generated', extension: 'h')
+  end
+
+  def render_wasm_cpp
+    render_template(header: 'copyright_header.erb', template: 'wasm_cpp.erb', output_subfolder: 'wasm/src/generated', extension: 'cpp')
+  end
+
+  def render_ts_declaration
+    render_template(header: nil, template: 'wasm_d_ts.erb', output_subfolder: 'wasm/lib/generated', extension: 'd.ts')
+    TsHelper.combine_declaration_files()
   end
 
   def render(file, locals = {})
@@ -102,7 +117,7 @@ class CodeGenerator
   end
 
   def should_return_string(method)
-    # Note: method with no parameters can also return string
+    # NOTE: method with no parameters can also return string
     method.return_type.name == :string
   end
 

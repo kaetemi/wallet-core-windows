@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -7,21 +7,23 @@
 #include "Signer.h"
 #include "Address.h"
 #include "Serialization.h"
-#include "../PublicKey.h"
+#include "TransactionFactory.h"
 #include "HexCoding.h"
 
 #include <google/protobuf/util/json_util.h>
 
-using namespace TW;
-using namespace TW::Elrond;
+namespace TW::Elrond {
 
-Proto::SigningOutput Signer::sign(const Proto::SigningInput &input) noexcept {
+Proto::SigningOutput Signer::sign(const Proto::SigningInput& input) noexcept {
+    TransactionFactory factory;
+
+    auto transaction = factory.create(input);
     auto privateKey = PrivateKey(input.private_key());
-    auto signableAsString = serializeTransaction(input.transaction());
+    auto signableAsString = serializeTransaction(transaction);
     auto signableAsData = TW::data(signableAsString);
     auto signature = privateKey.sign(signableAsData, TWCurveED25519);
     auto encodedSignature = hex(signature);
-    auto encoded = serializeSignedTransaction(input.transaction(), encodedSignature);
+    auto encoded = serializeSignedTransaction(transaction, encodedSignature);
 
     auto protoOutput = Proto::SigningOutput();
     protoOutput.set_signature(encodedSignature);
@@ -36,3 +38,5 @@ std::string Signer::signJSON(const std::string& json, const Data& key) {
     auto output = sign(input);
     return output.encoded();
 }
+
+} // namespace TW::Elrond

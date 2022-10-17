@@ -89,12 +89,34 @@ struct TWPrivateKey *_Nonnull TWHDWalletGetDerivedKey(struct TWHDWallet *_Nonnul
     return new TWPrivateKey{ wallet->impl.getKey(coin, derivationPath) };
 }
 
+struct TWPrivateKey *_Nonnull TWHDWalletGetKeyByCurve(struct TWHDWallet *_Nonnull wallet, enum TWCurve curve, TWString *_Nonnull derivationPath) {
+    auto& s = *reinterpret_cast<const std::string*>(derivationPath);
+    const auto path = DerivationPath(s);
+    return new TWPrivateKey{ wallet->impl.getKeyByCurve(curve, path)};
+}
+
 TWString *_Nonnull TWHDWalletGetExtendedPrivateKey(struct TWHDWallet *wallet, TWPurpose purpose, TWCoinType coin, TWHDVersion version) {
     return new std::string(wallet->impl.getExtendedPrivateKey(purpose, coin, version));
 }
 
 TWString *_Nonnull TWHDWalletGetExtendedPublicKey(struct TWHDWallet *wallet, TWPurpose purpose, TWCoinType coin, TWHDVersion version) {
     return new std::string(wallet->impl.getExtendedPublicKey(purpose, coin, version));
+}
+
+TWString *_Nonnull TWHDWalletGetExtendedPrivateKeyAccount(struct TWHDWallet *wallet, TWPurpose purpose, TWCoinType coin, TWDerivation derivation, TWHDVersion version, uint32_t account) {
+    return new std::string(wallet->impl.getExtendedPrivateKeyAccount(purpose, coin, derivation, version, account));
+}
+
+TWString *_Nonnull TWHDWalletGetExtendedPublicKeyAccount(struct TWHDWallet *wallet, TWPurpose purpose, TWCoinType coin, TWDerivation derivation, TWHDVersion version, uint32_t account) {
+    return new std::string(wallet->impl.getExtendedPublicKeyAccount(purpose, coin, derivation, version, account));
+}
+
+TWString *_Nonnull TWHDWalletGetExtendedPrivateKeyDerivation(struct TWHDWallet *wallet, TWPurpose purpose, TWCoinType coin, TWDerivation derivation, TWHDVersion version) {
+    return new std::string(wallet->impl.getExtendedPrivateKeyDerivation(purpose, coin, derivation, version));
+}
+
+TWString *_Nonnull TWHDWalletGetExtendedPublicKeyDerivation(struct TWHDWallet *wallet, TWPurpose purpose, TWCoinType coin, TWDerivation derivation, TWHDVersion version) {
+    return new std::string(wallet->impl.getExtendedPublicKeyDerivation(purpose, coin, derivation, version));
 }
 
 TWPublicKey *TWHDWalletGetPublicKeyFromExtended(TWString *_Nonnull extended, enum TWCoinType coin, TWString *_Nonnull derivationPath) {
