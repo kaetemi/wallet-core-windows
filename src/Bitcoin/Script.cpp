@@ -1,35 +1,26 @@
-// Copyright © 2017-2021 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-#include "Script.h"
-
 #include "Address.h"
 #include "CashAddress.h"
+#include "OpCodes.h"
+#include "Script.h"
 #include "SegwitAddress.h"
 
-#include "../Base58.h"
-#include "../Coin.h"
-
 #include "../BinaryCoding.h"
-#include "../Data.h"
+#include "../Coin.h"
 #include "../Decred/Address.h"
 #include "../Groestlcoin/Address.h"
-#include "../Hash.h"
-#include "../PublicKey.h"
 #include "../Zcash/TAddress.h"
-
-#include "OpCodes.h"
 
 #include <algorithm>
 #include <iterator>
 #include <cassert>
-#include <set>
 
-using namespace TW;
-using namespace TW::Bitcoin;
+namespace TW::Bitcoin {
 
 Data Script::hash() const {
     return Hash::ripemd(Hash::sha256(bytes));
@@ -148,8 +139,8 @@ bool Script::matchMultisig(std::vector<Data>& keys, int& required) const {
         return false;
     }
 
-    auto expectedCount = decodeNumber(opcode);
-    if (keys.size() != expectedCount || expectedCount < required) {
+    std::size_t expectedCount = decodeNumber(opcode);
+    if (keys.size() != expectedCount || expectedCount < static_cast<std::size_t>(required)) {
         return false;
     }
     if (it + 1 != bytes.size()) {
@@ -237,7 +228,7 @@ Script Script::buildPayToScriptHash(const Data& scriptHash) {
     return script;
 }
 
-Script Script::buildPayToWitnessProgram(const Data& program) {
+Script Script::buildPayToV0WitnessProgram(const Data& program) {
     assert(program.size() == 20 || program.size() == 32);
     Script script;
     script.bytes.push_back(OP_0);
@@ -249,12 +240,32 @@ Script Script::buildPayToWitnessProgram(const Data& program) {
 
 Script Script::buildPayToWitnessPublicKeyHash(const Data& hash) {
     assert(hash.size() == 20);
-    return Script::buildPayToWitnessProgram(hash);
+    return Script::buildPayToV0WitnessProgram(hash);
 }
 
 Script Script::buildPayToWitnessScriptHash(const Data& scriptHash) {
     assert(scriptHash.size() == 32);
-    return Script::buildPayToWitnessProgram(scriptHash);
+    return Script::buildPayToV0WitnessProgram(scriptHash);
+}
+
+Script Script::buildPayToV1WitnessProgram(const Data& publicKey) {
+    assert(publicKey.size() == 32);
+    Script script;
+    script.bytes.push_back(OP_1);
+    script.bytes.push_back(static_cast<byte>(publicKey.size()));
+    append(script.bytes, publicKey);
+    assert(script.bytes.size() == 34);
+    return script;
+}
+
+Script Script::buildOpReturnScript(const Data& data) {
+    static const size_t MaxOpReturnLength = 64;
+    Script script;
+    script.bytes.push_back(OP_RETURN);
+    size_t size = std::min(data.size(), MaxOpReturnLength);
+    script.bytes.push_back(static_cast<byte>(size));
+    script.bytes.insert(script.bytes.end(), data.begin(), data.begin() + size);
+    return script;
 }
 
 void Script::encode(Data& data) const {
@@ -281,22 +292,31 @@ Script Script::lockScriptForAddress(const std::string& string, enum TWCoinType c
             return buildPayToScriptHash(data);
         }
     } else if (SegwitAddress::isValid(string)) {
-        auto result = SegwitAddress::decode(string);
+        const auto result = SegwitAddress::decode(string);
         // address starts with bc/ltc
-        auto program = std::get<0>(result).witnessProgram;
-        return buildPayToWitnessProgram(program);
-    } else if (CashAddress::isValid(string)) {
-        auto address = CashAddress(string);
+        const auto address = std::get<0>(result);
+        if (address.witnessVersion == 0) {
+            return buildPayToV0WitnessProgram(address.witnessProgram);
+        }
+        if (address.witnessVersion == 1 && address.witnessProgram.size() == 32) {
+            return buildPayToV1WitnessProgram(address.witnessProgram);
+        }
+    } else if (BitcoinCashAddress::isValid(string)) {
+        auto address = BitcoinCashAddress(string);
         auto bitcoinAddress = address.legacyAddress();
         return lockScriptForAddress(bitcoinAddress.string(), TWCoinTypeBitcoinCash);
     } else if (Decred::Address::isValid(string)) {
-        auto bytes = Base58::bitcoin.decodeCheck(string, Hash::blake256d);
+        auto bytes = Base58::bitcoin.decodeCheck(string, Hash::HasherBlake256d);
         if (bytes[1] == TW::p2pkhPrefix(TWCoinTypeDecred)) {
             return buildPayToPublicKeyHash(Data(bytes.begin() + 2, bytes.end()));
         }
         if (bytes[1] == TW::p2shPrefix(TWCoinTypeDecred)) {
             return buildPayToScriptHash(Data(bytes.begin() + 2, bytes.end()));
         }
+    } else if (ECashAddress::isValid(string)) {
+        auto address = ECashAddress(string);
+        auto bitcoinAddress = address.legacyAddress();
+        return lockScriptForAddress(bitcoinAddress.string(), TWCoinTypeECash);
     } else if (Groestlcoin::Address::isValid(string)) {
         auto address = Groestlcoin::Address(string);
         auto data = Data();
@@ -321,3 +341,5 @@ Script Script::lockScriptForAddress(const std::string& string, enum TWCoinType c
     }
     return {};
 }
+
+} // namespace TW::Bitcoin

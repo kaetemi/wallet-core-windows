@@ -6,16 +6,16 @@
 
 #pragma once
 
-#include "../proto/Elrond.pb.h"
 #include "Data.h"
+#include "Transaction.h"
 #include <nlohmann/json.hpp>
+
+namespace TW::Elrond {
 
 using string = std::string;
 using json = nlohmann::json;
 
-namespace TW::Elrond {
+string serializeTransaction(const Transaction& transaction);
+string serializeSignedTransaction(const Transaction& transaction, string encodedSignature);
 
-string serializeTransaction(const Proto::TransactionMessage& message);
-string serializeSignedTransaction(const Proto::TransactionMessage& message, string encodedSignature);
-
-} // namespace
+} // namespace TW::Elrond

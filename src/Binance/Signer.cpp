@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -6,7 +6,6 @@
 
 #include "Signer.h"
 #include "Serialization.h"
-#include "../Hash.h"
 #include "../HexCoding.h"
 #include "../PrivateKey.h"
 
@@ -16,8 +15,7 @@
 
 #include <string>
 
-using namespace TW;
-using namespace TW::Binance;
+namespace TW::Binance {
 
 // Message prefixes
 // see https://docs.binance.org/api-reference/transactions.html#amino-types
@@ -65,10 +63,32 @@ Data Signer::build() const {
 }
 
 Data Signer::sign() const {
+    auto hash = preImageHash();
     auto key = PrivateKey(input.private_key());
-    auto hash = Hash::sha256(signaturePreimage());
     auto signature = key.sign(hash, TWCurveSECP256k1);
-    return Data(signature.begin(), signature.end() - 1);
+    return {signature.begin(), signature.end() - 1};
+}
+
+Data Signer::preImageHash() const {
+    return Hash::sha256(signaturePreimage());
+}
+
+Proto::SigningOutput Signer::compile(const Data& signature, const PublicKey& publicKey) const {
+    // validate public key
+    if (publicKey.type != TWPublicKeyTypeSECP256k1) {
+        throw std::invalid_argument("Invalid public key");
+    }
+    {
+        // validate correctness of signature
+        const auto hash = this->preImageHash();
+        if (!publicKey.verify(signature, hash)) {
+            throw std::invalid_argument("Invalid signature/hash/publickey combination");
+        }
+    }
+    const auto encoded = encodeTransaction(encodeSignature(signature, publicKey));
+    auto output = Proto::SigningOutput();
+    output.set_encoded(encoded.data(), encoded.size());
+    return output;
 }
 
 std::string Signer::signaturePreimage() const {
@@ -157,7 +177,10 @@ Data Signer::encodeOrder() const {
 Data Signer::encodeSignature(const Data& signature) const {
     auto key = PrivateKey(input.private_key());
     auto publicKey = key.getPublicKey(TWPublicKeyTypeSECP256k1);
+    return encodeSignature(signature, publicKey);
+}
 
+Data Signer::encodeSignature(const Data& signature, const PublicKey& publicKey) const {
     auto encodedPublicKey = pubKeyPrefix;
     encodedPublicKey.insert(encodedPublicKey.end(), static_cast<uint8_t>(publicKey.bytes.size()));
     encodedPublicKey.insert(encodedPublicKey.end(), publicKey.bytes.begin(), publicKey.bytes.end());
@@ -190,5 +213,7 @@ Data Signer::aminoWrap(const std::string& raw, const Data& typePrefix, bool pref
         cos.WriteRaw(raw.data(), static_cast<int>(raw.size()));
     }
 
-    return Data(msg.begin(), msg.end());
+    return {msg.begin(), msg.end()};
 }
+
+} // namespace TW::Binance

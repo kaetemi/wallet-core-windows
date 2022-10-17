@@ -9,7 +9,7 @@
 #include <string>
 
 #include "Transaction.h"
-#include "../Data.h"
+#include "Data.h"
 #include "../PrivateKey.h"
 #include "../proto/Theta.pb.h"
 
@@ -37,8 +37,3 @@ class Signer {
 };
 
 } // namespace TW::Theta
-
-/// Wrapper for C interface.
-struct TWThetaSigner {
-    TW::Theta::Signer impl;
-};

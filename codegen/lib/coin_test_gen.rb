@@ -14,8 +14,10 @@ class CoinTestGen
   # Transforms a coin name to a C++ name
   def format_name(n)
     formatted = n
-    #formatted = formatted.sub(/^([a-z]+)/, &:upcase)
-    formatted = formatted.sub(/\s/, '')
+
+    # Remove whitespaces
+    formatted.gsub!(/\s+/, '')
+
     formatted
   end
 
@@ -56,16 +58,24 @@ class CoinTestGen
     end
   end
 
-  def generate_coin_test_file(coin, templateFile)
+  def generate_coin_test_file(coin, templateFile, overwriteExisting = true)
     path = File.expand_path(templateFile, File.join(File.dirname(__FILE__), '..', 'lib', 'templates'))
     template = ERB.new(File.read(path), nil, '-')
     result = template.result(binding)
 
-    folder = 'tests/' + format_name(coin['name'])
+    folder = 'tests/chains/'
+    if coin.key?('testFolderName')
+      folder += format_name(coin['testFolderName'])
+    else
+      folder += format_name(coin['name'])
+    end
+
     file = 'TWCoinTypeTests.cpp'
     FileUtils.mkdir_p folder
     path = File.join(folder, file)
-    File.write(path, result)
-    puts "Generated file " + path
+    if not File.exist?(path) or overwriteExisting
+      File.write(path, result)
+      puts "Generated file " + path
+    end
   end
 end

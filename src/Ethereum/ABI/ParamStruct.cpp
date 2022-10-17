@@ -1,4 +1,4 @@
-// Copyright © 2017-2021 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -7,22 +7,21 @@
 #include "ParamStruct.h"
 #include "ValueEncoder.h"
 #include "ParamFactory.h"
-#include "ParamAddress.h"
 #include <Hash.h>
 #include <HexCoding.h>
 
+#include <algorithm>
 #include <nlohmann/json.hpp>
 
 #include <cassert>
 #include <string>
 
-using namespace TW::Ethereum::ABI;
-using namespace TW;
+namespace TW::Ethereum::ABI {
+
 using json = nlohmann::json;
 
 static const Data EipStructPrefix = parse_hex("1901");
 static const auto Eip712Domain = "EIP712Domain";
-
 
 std::string ParamNamed::getType() const {
     return _param->getType() + " " + _name;
@@ -63,7 +62,7 @@ std::string ParamSetNamed::getType() const {
 
 Data ParamSetNamed::encodeHashes() const {
     Data hashes;
-    for (auto p: _params) {
+    for (auto p : _params) {
         append(hashes, p->hashStruct());
     }
     return hashes;
@@ -71,7 +70,22 @@ Data ParamSetNamed::encodeHashes() const {
 
 std::string ParamSetNamed::getExtraTypes(std::vector<std::string>& ignoreList) const {
     std::string types;
-    for (auto& p: _params) {
+
+    auto params = _params;
+    /// referenced struct type should be sorted by name see: https://eips.ethereum.org/EIPS/eip-712#definition-of-encodetype
+    std::stable_sort(params.begin(), params.end(), [](auto& a, auto& b) {
+        auto lhs = a->getType();
+        auto rhs = b->getType();
+        if (ParamFactory::isPrimitive(lhs)) {
+            return true;
+        }
+        if (ParamFactory::isPrimitive(rhs)) {
+            return true;
+        }
+        return lhs.compare(rhs) < 0;
+    });
+
+    for (auto& p : params) {
         auto pType = p->_param->getType();
         if (std::find(ignoreList.begin(), ignoreList.end(), pType) == ignoreList.end()) {
             types += p->getExtraTypes(ignoreList);
@@ -82,7 +96,7 @@ std::string ParamSetNamed::getExtraTypes(std::vector<std::string>& ignoreList) c
 }
 
 std::shared_ptr<ParamNamed> ParamSetNamed::findParamByName(const std::string& name) const {
-    for (auto& p: _params) {
+    for (auto& p : _params) {
         if (p->_name == name) {
             return p;
         }
@@ -160,15 +174,16 @@ Data ParamStruct::hashStructJson(const std::string& messageJson) {
             message["message"].dump(),
             message["types"].dump());
         if (messageStruct) {
-            TW::append(hashes, messageStruct->hashStruct());
+            const auto messageHash = messageStruct->hashStruct();
+            TW::append(hashes, messageHash);
             return Hash::keccak256(hashes);
         }
     }
-    return {};  // fallback
+    return {}; // fallback
 }
 
 std::shared_ptr<ParamStruct> findType(const std::string& typeName, const std::vector<std::shared_ptr<ParamStruct>>& types) {
-    for (auto& t: types) {
+    for (auto& t : types) {
         if (t->getType() == typeName) {
             return t;
         }
@@ -195,9 +210,9 @@ std::shared_ptr<ParamStruct> ParamStruct::makeStruct(const std::string& structTy
         std::vector<std::shared_ptr<ParamNamed>> params;
         const auto& typeParams = typeInfo->getParams();
         // iterate through the type; order is important and field order in the value json is not defined
-        for (int i = 0; i < typeParams.getCount(); ++i) {
-            auto name = typeParams.getParam(i)->getName();
-            auto type = typeParams.getParam(i)->getParam()->getType();
+        for (auto i = 0ul; i < typeParams.getCount(); ++i) {
+            auto name = typeParams.getParam(static_cast<int>(i))->getName();
+            auto type = typeParams.getParam(static_cast<int>(i))->getParam()->getType();
             // look for it in value (may throw)
             auto value = values[name];
             // first try simple params
@@ -221,15 +236,27 @@ std::shared_ptr<ParamStruct> ParamStruct::makeStruct(const std::string& structTy
                     throw std::invalid_argument("Value must be array for type " + type);
                 }
                 std::vector<std::shared_ptr<ParamBase>> paramsArray;
-                for (const auto& e: value) {
-                    auto subStruct = makeStruct(arrayType, e.dump(), typesJson);
+                if (value.size() == 0) {
+                    // empty array
+                    auto subStruct = makeStruct(arrayType, "{}", typesJson);
                     if (!subStruct) {
-                        throw std::invalid_argument("Could not process array sub-struct " + arrayType + " " + e.dump());
+                        throw std::invalid_argument("Could not process array sub-struct " + arrayType + " " + "{}");
                     }
                     assert(subStruct);
-                    paramsArray.push_back(subStruct);
+                    auto tmp = std::make_shared<ParamArray>(paramsArray);
+                    tmp->setProto(subStruct);
+                    params.push_back(std::make_shared<ParamNamed>(name, tmp));
+                } else {
+                    for (const auto& e : value) {
+                        auto subStruct = makeStruct(arrayType, e.dump(), typesJson);
+                        if (!subStruct) {
+                            throw std::invalid_argument("Could not process array sub-struct " + arrayType + " " + e.dump());
+                        }
+                        assert(subStruct);
+                        paramsArray.push_back(subStruct);
+                    }
+                    params.push_back(std::make_shared<ParamNamed>(name, std::make_shared<ParamArray>(paramsArray)));
                 }
-                params.push_back(std::make_shared<ParamNamed>(name, std::make_shared<ParamArray>(paramsArray)));
             } else {
                 // try if sub struct
                 auto subTypeInfo = findType(type, types);
@@ -271,7 +298,7 @@ std::shared_ptr<ParamStruct> ParamStruct::makeType(const std::string& structName
             throw std::invalid_argument("Expecting array");
         }
         std::vector<std::shared_ptr<ParamNamed>> params;
-        for(auto& p2: jsonValue) {
+        for (auto& p2 : jsonValue) {
             auto name = p2["name"].get<std::string>();
             auto type = p2["type"].get<std::string>();
             if (name.empty() || type.empty()) {
@@ -354,3 +381,5 @@ std::vector<std::shared_ptr<ParamStruct>> ParamStruct::makeTypes(const std::stri
         throw std::invalid_argument("Could not process Json");
     }
 }
+
+} // namespace TW::Ethereum::ABI

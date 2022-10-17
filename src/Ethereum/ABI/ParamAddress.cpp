@@ -1,4 +1,4 @@
-// Copyright © 2017-2021 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -8,19 +8,16 @@
 #include <HexCoding.h>
 #include <uint256.h>
 
-using namespace TW::Ethereum::ABI;
-using namespace TW;
+namespace TW::Ethereum::ABI {
 
 Data ParamAddress::getData() const {
-    Data data = store(getVal());
-    if (data.size() >= bytes) { return data; }
-    // need to pad
-    Data padded(bytes - data.size());
-    append(padded, data);
-    return padded;
+    Data data = store(getVal(), bytes);
+    return data;
 }
 
 bool ParamAddress::setValueJson(const std::string& value) {
     setVal(load(parse_hex(value)));
     return true;
 }
+
+} // namespace TW::Ethereum::ABI

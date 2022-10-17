@@ -3,11 +3,10 @@ apply plugin: 'maven-publish'
 group='com.github.trustwallet'
 
 android {
-    compileSdkVersion 28
-    ndkVersion '21.2.6472646'
+    compileSdkVersion 32
+    ndkVersion '23.1.7779620'
     defaultConfig {
         minSdkVersion 23
-        targetSdkVersion 29
         versionCode 1
         versionName "1.0"
         externalNativeBuild {
@@ -30,7 +29,7 @@ android {
             minifyEnabled false
             // limit platforms built for testing
             ndk {
-                abiFilters 'x86'
+                abiFilters 'x86', 'arm64-v8a'
             }
         }
     }
@@ -41,16 +40,14 @@ android {
 
     externalNativeBuild {
         cmake {
-            version "3.10.2"
+            version "3.18.1"
             path "../../CMakeLists.txt"
         }
     }
 }
 
 dependencies {
-    implementation 'io.grpc:grpc-protobuf:1.34.0'
+    implementation 'com.google.protobuf:protobuf-javalite:3.21.2'
 }
 
 apply from: 'maven-push.gradle'
-
-

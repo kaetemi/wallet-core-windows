@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -12,8 +12,7 @@
 
 #include <cassert>
 
-using namespace TW::Ethereum::ABI;
-using namespace TW;
+namespace TW::Ethereum::ABI {
 
 void ParamByteArray::encodeBytes(const Data& bytes, Data& data) {
     ValueEncoder::encodeUInt256(uint256_t(bytes.size()), data);
@@ -123,8 +122,8 @@ bool ParamString::decodeString(const Data& encoded, std::string& decoded, size_t
 Data ParamString::hashStruct() const {
     Data hash(32);
     Data encoded = data(_str);
-    if (encoded.size() > 0) {
-        hash = Hash::keccak256(encoded);
-    }
+    hash = Hash::keccak256(encoded);
     return hash;
 }
+
+} // namespace TW::Ethereum::ABI

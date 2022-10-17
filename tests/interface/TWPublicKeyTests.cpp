@@ -1,10 +1,10 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-#include "TWTestUtilities.h"
+#include "TestUtilities.h"
 
 #include "PublicKey.h"
 #include "PrivateKey.h"
@@ -49,20 +49,20 @@ TEST(TWPublicKeyTests, CompressedExtended) {
     const auto privateKey = WRAP(TWPrivateKey, new TWPrivateKey{ key });
     auto publicKey = WRAP(TWPublicKey, TWPrivateKeyGetPublicKeySecp256k1(privateKey.get(), true));
     EXPECT_EQ(TWPublicKeyKeyType(publicKey.get()), TWPublicKeyTypeSECP256k1);
-    EXPECT_EQ(publicKey.get()->impl.bytes.size(), 33);
+    EXPECT_EQ(publicKey.get()->impl.bytes.size(), 33ul);
     EXPECT_EQ(TWPublicKeyIsCompressed(publicKey.get()), true);
     EXPECT_TRUE(TWPublicKeyIsValid(publicKey.get(), TWPublicKeyTypeSECP256k1));
 
     auto extended = WRAP(TWPublicKey, TWPublicKeyUncompressed(publicKey.get()));
     EXPECT_EQ(TWPublicKeyKeyType(extended.get()), TWPublicKeyTypeSECP256k1Extended);
-    EXPECT_EQ(extended.get()->impl.bytes.size(), 65);
+    EXPECT_EQ(extended.get()->impl.bytes.size(), 65ul);
     EXPECT_EQ(TWPublicKeyIsCompressed(extended.get()), false);
     EXPECT_TRUE(TWPublicKeyIsValid(extended.get(), TWPublicKeyTypeSECP256k1Extended));
 
     auto compressed = WRAP(TWPublicKey, TWPublicKeyCompressed(extended.get()));
     //EXPECT_TRUE(compressed == publicKey.get());
     EXPECT_EQ(TWPublicKeyKeyType(compressed.get()), TWPublicKeyTypeSECP256k1);
-    EXPECT_EQ(compressed.get()->impl.bytes.size(), 33);
+    EXPECT_EQ(compressed.get()->impl.bytes.size(), 33ul);
     EXPECT_EQ(TWPublicKeyIsCompressed(compressed.get()), true);
     EXPECT_TRUE(TWPublicKeyIsValid(compressed.get(), TWPublicKeyTypeSECP256k1));
 }
@@ -79,6 +79,23 @@ TEST(TWPublicKeyTests, Verify) {
 
     auto publicKey = WRAP(TWPublicKey, TWPrivateKeyGetPublicKeySecp256k1(privateKey.get(), false));
     ASSERT_TRUE(TWPublicKeyVerify(publicKey.get(), signature.get(), digest.get()));
+}
+
+TEST(TWPublicKeyTests, VerifyAsDER) {
+    const PrivateKey key = PrivateKey(parse_hex("afeefca74d9a325cf1d6b6911d61a65c32afa8e02bd5e78e2e4ac2910bab45f5"));
+    const auto privateKey = WRAP(TWPrivateKey, new TWPrivateKey{ key });
+
+    const char* message = "Hello";
+    auto messageData = WRAPD(TWDataCreateWithBytes((const uint8_t*)message, strlen(message)));
+    auto digest = WRAPD(TWHashKeccak256(messageData.get()));
+
+    auto signature = WRAPD(TWPrivateKeySignAsDER(privateKey.get(), digest.get()));
+
+    auto publicKey = WRAP(TWPublicKey, TWPrivateKeyGetPublicKeySecp256k1(privateKey.get(), false));
+
+    ASSERT_TRUE(TWPublicKeyVerifyAsDER(publicKey.get(), signature.get(), digest.get()));
+
+    ASSERT_FALSE(TWPublicKeyVerify(publicKey.get(), signature.get(), digest.get()));
 }
 
 TEST(TWPublicKeyTests, VerifyEd25519) {

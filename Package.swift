@@ -1,27 +1,24 @@
 // swift-tools-version:5.3
-
 import PackageDescription
 
 let package = Package(
     name: "WalletCore",
     platforms: [.iOS(.v13)],
     products: [
-        .library(
-            name: "WalletCore", targets: ["WalletCore", "SwiftProtobuf"]
-        )
+        .library(name: "WalletCore", targets: ["WalletCore"]),
+        .library(name: "SwiftProtobuf", targets: ["SwiftProtobuf"])
     ],
-    dependencies: [
-    ],
+    dependencies: [],
     targets: [
         .binaryTarget(
             name: "WalletCore",
-            url: "https://github.com/trustwallet/wallet-core/releases/download/2.6.31/WalletCore.xcframework.zip",
-            checksum: "29d88807485f88992e00a5b7ed1ddf53ca57dacb89ba5e5368dc931102600879"
+            url: "https://github.com/trustwallet/wallet-core/releases/download/3.0.6/WalletCore.xcframework.zip",
+            checksum: "a3df0c2b30fc59ede0a2600266fc19b8c0cf655dbef3fb832488c8ddedcb6b93"
         ),
         .binaryTarget(
             name: "SwiftProtobuf",
-            url: "https://github.com/trustwallet/wallet-core/releases/download/2.6.31/SwiftProtobuf.xcframework.zip",
-            checksum: "d1035aa8a32f2483305bbe9cd3d5774bf6c1a65ce5a37213c9ee651c78873a55"
+            url: "https://github.com/trustwallet/wallet-core/releases/download/3.0.6/SwiftProtobuf.xcframework.zip",
+            checksum: "61fa8483d4bd43f1898db6997eff0279426f15f9e518e12db0d762ec5f927a9b"
         )
     ]
 )

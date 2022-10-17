@@ -7,9 +7,11 @@
 #pragma once
 
 #include "Data.h"
+#include "PublicKey.h"
 #include "../proto/Binance.pb.h"
 
 #include <cstdint>
+#include <utility>
 
 namespace TW::Binance {
 
@@ -24,7 +26,7 @@ class Signer {
     Proto::SigningInput input;
 
     /// Initializes a transaction signer.
-    explicit Signer(const Proto::SigningInput& input) : input(input) {}
+    explicit Signer(Proto::SigningInput input) : input(std::move(input)) {}
 
     /// Builds a signed transaction.
     ///
@@ -38,11 +40,15 @@ class Signer {
     /// error.
     TW::Data sign() const;
 
-  private:
+    TW::Data preImageHash() const;
+    Proto::SigningOutput compile(const Data& signature, const PublicKey& publicKey) const;
     std::string signaturePreimage() const;
+
+  private:
     TW::Data encodeTransaction(const TW::Data& signature) const;
     TW::Data encodeOrder() const;
     TW::Data encodeSignature(const TW::Data& signature) const;
+    TW::Data encodeSignature(const TW::Data& signature, const PublicKey& publicKey) const;
     TW::Data aminoWrap(const std::string& raw, const TW::Data& typePrefix,
                        bool isPrefixLength) const;
 };

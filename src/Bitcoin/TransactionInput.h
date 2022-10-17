@@ -8,7 +8,7 @@
 
 #include "OutPoint.h"
 #include "Script.h"
-#include "../Data.h"
+#include "Data.h"
 
 #include <vector>
 
@@ -45,8 +45,3 @@ class TransactionInput {
 };
 
 } // namespace TW::Bitcoin
-
-/// Wrapper for C interface.
-struct TWBitcoinTransactionInput {
-    TW::Bitcoin::TransactionInput impl;
-};

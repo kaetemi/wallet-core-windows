@@ -1,4 +1,4 @@
-// Copyright © 2017-2020 Trust Wallet.
+// Copyright © 2017-2022 Trust Wallet.
 //
 // This file is part of Trust. The full Trust copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -7,18 +7,13 @@
 #include "Program.h"
 #include "Address.h"
 #include "Transaction.h"
-#include "../Base58.h"
-#include "../Hash.h"
 
-#include <TrezorCrypto/ed25519-donna/ed25519-donna.h>
+#include <limits>
 
-#include <cassert>
-
-using namespace TW;
-using namespace TW::Solana;
+namespace TW::Solana {
 
 Address StakeProgram::addressFromValidatorSeed(const Address& fromAddress, const Address& validatorAddress,
-    const Address& programId) {
+                                               const Address& programId) {
     Data extended = fromAddress.vector();
     std::string seed = validatorAddress.string();
     Data vecSeed(seed.begin(), seed.end());
@@ -52,8 +47,7 @@ Address TokenProgram::defaultTokenAddress(const Address& mainAddress, const Addr
     std::vector<Data> seeds = {
         TW::data(mainAddress.bytes.data(), mainAddress.bytes.size()),
         TW::data(programId.bytes.data(), programId.bytes.size()),
-        TW::data(tokenMintAddress.bytes.data(), tokenMintAddress.bytes.size())
-    };
+        TW::data(tokenMintAddress.bytes.data(), tokenMintAddress.bytes.size())};
     return findProgramAddress(seeds, Address(ASSOCIATED_TOKEN_PROGRAM_ID_ADDRESS));
 }
 
@@ -61,23 +55,20 @@ Address TokenProgram::defaultTokenAddress(const Address& mainAddress, const Addr
  * Based on solana code, find_program_address()
  * https://github.com/solana-labs/solana/blob/master/sdk/program/src/pubkey.rs#L193
  */
-Address TokenProgram::findProgramAddress(const std::vector<TW::Data>& seeds, const Address& programId) {
+Address TokenProgram::findProgramAddress(const std::vector<TW::Data>& seeds, [[maybe_unused]] const Address& programId) {
     Address result(Data(32));
     // cycle through seeds for the rare case when result is not valid
-    for (uint8_t seed = 255; seed >= 0; --seed) {
-        std::vector<Data> seedsCopy;
-        for (auto& s: seeds) {
-            seedsCopy.push_back(s);
-        }
-        // add extra seed
-        seedsCopy.push_back({seed});
-        Address address = createProgramAddress(seedsCopy, Address(ASSOCIATED_TOKEN_PROGRAM_ID_ADDRESS));
+    auto bumpSeed = Data{std::numeric_limits<std::uint8_t>::max()};
+    for (std::uint8_t seed = 0; seed <= std::numeric_limits<std::uint8_t>::max(); ++seed) {
+        std::vector<Data> seedsCopy = seeds;
+        seedsCopy.emplace_back(bumpSeed);
+        Address address = createProgramAddress(seedsCopy, programId);
         PublicKey publicKey = PublicKey(TW::data(address.bytes.data(), address.bytes.size()), TWPublicKeyTypeED25519);
         if (!publicKey.isValidED25519()) {
             result = address;
             break;
         }
-        // try next seed
+        bumpSeed[0] -= 1;
     }
     return result;
 }
@@ -89,7 +80,7 @@ Address TokenProgram::findProgramAddress(const std::vector<TW::Data>& seeds, con
 Address TokenProgram::createProgramAddress(const std::vector<TW::Data>& seeds, const Address& programId) {
     // concatenate seeds
     Data hashInput;
-    for (auto& seed: seeds) {
+    for (auto& seed : seeds) {
         append(hashInput, seed);
     }
     // append programId
@@ -99,3 +90,6 @@ Address TokenProgram::createProgramAddress(const std::vector<TW::Data>& seeds, c
     Data hash = TW::Hash::sha256(hashInput.data(), hashInput.size());
     return Address(hash);
 }
+
+} // namespace TW::Solana
+

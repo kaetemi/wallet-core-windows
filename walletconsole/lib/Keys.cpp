@@ -31,10 +31,6 @@ Keys::Keys(ostream& out, const Coins& coins) : _out(out), _coins(coins) {
 void privateKeyToResult(const PrivateKey& priKey, string& res_out) {
     // take the key, but may need to take extension as well
     res_out = hex(priKey.bytes);
-    if (priKey.extensionBytes.size() > 0) {
-        res_out += hex(priKey.extensionBytes);
-        res_out += hex(priKey.chainCodeBytes);
-    }
 }
 
 bool Keys::newKey(const string& coinid, string& res) {
@@ -69,7 +65,7 @@ bool Keys::pubPri(const string& coinid, const string& p, string& res) {
     }
 }
 
-bool Keys::priPub(const string& p, string& res) {
+bool Keys::priPub([[maybe_unused]] const string& p, [[maybe_unused]] string& res) {
     _out << "Not yet implemented! :)" << endl;
     return false;
 }
@@ -81,7 +77,7 @@ void Keys::setMnemonic(const vector<string>& param) {
     }
     // concatenate
     string mnem = "";
-    for (int i = 1; i < param.size(); ++i) {
+    for (auto i = 1ul; i < param.size(); ++i) {
         if (i > 1) mnem += " ";
         mnem += param[i]; 
     }

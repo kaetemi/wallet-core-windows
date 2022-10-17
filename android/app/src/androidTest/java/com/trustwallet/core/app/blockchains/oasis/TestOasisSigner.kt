@@ -8,16 +8,12 @@ package com.trustwallet.core.app.blockchains.oasis
 
 import com.google.protobuf.ByteString
 import com.trustwallet.core.app.utils.Numeric
-import com.trustwallet.core.app.utils.toHexByteArray
-import com.trustwallet.core.app.utils.toHexBytes
-import com.trustwallet.core.app.utils.toHexBytesInByteString
-import junit.framework.Assert.assertEquals
 import org.junit.Test
+import org.junit.Assert.assertEquals
 import wallet.core.java.AnySigner
 import wallet.core.jni.CoinType.OASIS
 import wallet.core.jni.proto.Oasis
 import wallet.core.jni.proto.Oasis.SigningOutput
-import java.math.BigInteger
 
 class TestOasisSigner {
 
@@ -49,7 +45,7 @@ class TestOasisSigner {
 
         val output = AnySigner.sign(signingInput.build(), OASIS, SigningOutput.parser())
         assertEquals(
-            "0xa273756e747275737465645f7261775f76616c7565585ea4656e6f6e636500666d6574686f64707374616b696e672e5472616e7366657263666565a2636761730066616d6f756e74410064626f6479a262746f5500c73cc001463434915ba3f39751beb7c0905b45eb66616d6f756e744400989680697369676e6174757265a26a7075626c69635f6b6579582093d8f8a455f50527976a8aa87ebde38d5606efa86cb985d3fb466aff37000e3b697369676e61747572655840e331ce731ed819106586152b13cd98ecf3248a880bdc71174ee3d83f6d5f3f8ee8fc34c19b22032f2f1e3e06d382720125d7a517fba9295c813228cc2b63170b",
+            "0xa2697369676e6174757265a2697369676e617475726558406e51c18c9b2015c9b49414b3307336597f51ff331873d214ce2db81c9651a34d99529ccaa294a39ccd01c6b0bc2c2239d87c624e5ba4840cf99ac8f9283e240c6a7075626c69635f6b6579582093d8f8a455f50527976a8aa87ebde38d5606efa86cb985d3fb466aff37000e3b73756e747275737465645f7261775f76616c7565585ea463666565a2636761730066616d6f756e74410064626f6479a262746f5500c73cc001463434915ba3f39751beb7c0905b45eb66616d6f756e744400989680656e6f6e636500666d6574686f64707374616b696e672e5472616e73666572",
             Numeric.toHexString(output.encoded.toByteArray())
         )
     }

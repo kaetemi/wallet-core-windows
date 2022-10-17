@@ -16,6 +16,7 @@
 #include <TrustWalletCore/TWCurve.h>
 #include <TrustWalletCore/TWHDVersion.h>
 #include <TrustWalletCore/TWPurpose.h>
+#include <TrustWalletCore/TWDerivation.h>
 
 #include <array>
 #include <optional>
@@ -74,17 +75,46 @@ class HDWallet {
     /// Returns the master private key extension (32 byte).
     PrivateKey getMasterKeyExtension(TWCurve curve) const;
 
+    /// Returns the private key with the given derivation.
+    PrivateKey getKey(const TWCoinType coin, TWDerivation derivation) const;
+
     /// Returns the private key at the given derivation path.
     PrivateKey getKey(const TWCoinType coin, const DerivationPath& derivationPath) const;
 
-    /// Derives the address for a coin.
+    /// Returns the private key at the given derivation path and curve.
+    PrivateKey getKeyByCurve(TWCurve curve, const DerivationPath& derivationPath) const;
+
+    /// Derives the address for a coin (default derivation).
     std::string deriveAddress(TWCoinType coin) const;
 
-    /// Returns the extended private key.
-    std::string getExtendedPrivateKey(TWPurpose purpose, TWCoinType coin, TWHDVersion version) const;
+    /// Derives the address for a coin with given derivation.
+    std::string deriveAddress(TWCoinType coin, TWDerivation derivation) const;
 
-    /// Returns the extended public key.
-    std::string getExtendedPublicKey(TWPurpose purpose, TWCoinType coin, TWHDVersion version) const;
+    /// Returns the extended private key for default 0 account with the given derivation.
+    std::string getExtendedPrivateKeyDerivation(TWPurpose purpose, TWCoinType coin, TWDerivation derivation, TWHDVersion version) const {
+        return getExtendedPrivateKeyAccount(purpose, coin, derivation, version, 0);
+    }
+
+    /// Returns the extended public key for default 0 account with the given derivation.
+    std::string getExtendedPublicKeyDerivation(TWPurpose purpose, TWCoinType coin, TWDerivation derivation, TWHDVersion version) const {
+        return getExtendedPublicKeyAccount(purpose, coin, derivation, version, 0);
+    }
+
+    /// Returns the extended private key for default 0 account; derivation path used is "m/purpose'/coin'/0'".
+    std::string getExtendedPrivateKey(TWPurpose purpose, TWCoinType coin, TWHDVersion version) const {
+        return getExtendedPrivateKeyAccount(purpose, coin, TWDerivationDefault, version, 0);
+    }
+
+    /// Returns the extended public key for default 0 account; derivation path used is "m/purpose'/coin'/0'".
+    std::string getExtendedPublicKey(TWPurpose purpose, TWCoinType coin, TWHDVersion version) const {
+        return getExtendedPublicKeyAccount(purpose, coin, TWDerivationDefault, version, 0);
+    }
+
+    /// Returns the extended private key for a custom account; derivation path used is "m/purpose'/coin'/account'".
+    std::string getExtendedPrivateKeyAccount(TWPurpose purpose, TWCoinType coin, TWDerivation derivation, TWHDVersion version, uint32_t account) const;
+
+    /// Returns the extended public key for a custom account; derivation path used is "m/purpose'/coin'/account'".
+    std::string getExtendedPublicKeyAccount(TWPurpose purpose, TWCoinType coin, TWDerivation derivation, TWHDVersion version, uint32_t account) const;
 
     /// Returns the BIP32 Root Key (private)
     std::string getRootKey(TWCoinType coin, TWHDVersion version) const;
@@ -95,18 +125,11 @@ class HDWallet {
     /// Computes the private key from an extended private key representation.
     static std::optional<PrivateKey> getPrivateKeyFromExtended(const std::string& extended, TWCoinType coin, const DerivationPath& path);
 
-  public:
-    // Private key type (later could be moved out of HDWallet)
-    enum PrivateKeyType {
-      PrivateKeyTypeDefault32 = 0, // 32-byte private key
-      PrivateKeyTypeExtended96 = 1, // 3*32-byte extended private key
-    };
-    
-    // obtain privateKeyType used by the coin/curve
-    static PrivateKeyType getPrivateKeyType(TWCurve curve);
-
   private:
     void updateSeedAndEntropy(bool check = true);
+
+    // For Cardano, derive 2nd staking derivation path from the primary one
+    static DerivationPath cardanoStakingDerivationPath(const DerivationPath& path);
 };
 
 } // namespace TW

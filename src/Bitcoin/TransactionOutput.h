@@ -8,7 +8,7 @@
 
 #include "Amount.h"
 #include "Script.h"
-#include "../Data.h"
+#include "Data.h"
 
 #include <memory>
 
@@ -34,8 +34,3 @@ struct TransactionOutput {
 };
 
 } // namespace TW::Bitcoin
-
-/// Wrapper for C interface.
-struct TWBitcoinTransactionOutput {
-    TW::Bitcoin::TransactionOutput impl;
-};

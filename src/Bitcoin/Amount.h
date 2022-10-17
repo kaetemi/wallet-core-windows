@@ -15,15 +15,4 @@ namespace TW::Bitcoin {
 /// Amount in satoshis (can be negative)
 using Amount = int64_t;
 
-/// One bitcoin in satoshis
-static const Amount coin = 100000000;
-
-/// Maxximum valid amount in satoshis.
-static const Amount maxAmount = 21000000 * coin;
-
-/// Detemines if the provided value is a valid amount.
-inline bool isValidAmount(const Amount& amount) {
-    return (amount >= 0 && amount <= maxAmount);
-}
-
 } // namespace TW::Bitcoin

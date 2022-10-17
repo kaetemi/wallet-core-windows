@@ -1,7 +1,17 @@
+# Copyright © 2017-2022 Trust Wallet.
+#
+# This file is part of Trust. The full Trust copyright notice, including
+# terms governing use, modification, and redistribution, is contained in the
+# file LICENSE at the root of the source code distribution tree.
+
 # Expected input configuration: WALLET_CORE: directory for TrustWalletCore build dir
 # e.g. cmake . -DWALLET_CORE=../wallet-core
-cmake_minimum_required (VERSION 3.4)
+cmake_minimum_required (VERSION 3.8 FATAL_ERROR)
 project (wallet-core-demo-cpp)
+
+if (NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang"))
+    message(FATAL_ERROR "You should use clang compiler")
+endif()
 
 set (SETUP_MESSAGE "Please provide TrustWalletCore build directory with -DWALLET_CORE.   Example: cmake . -DWALLET_CORE=../wallet-core")
 
@@ -9,24 +19,24 @@ if (NOT WALLET_CORE)
     message (FATAL_ERROR "${SETUP_MESSAGE}")
 endif ()
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set (CMAKE_C_STANDARD 11)
+set (CMAKE_C_STANDARD_REQUIRED ON)
+
 # Include dirs:
 # ${WALLET_CORE}/include -- public TrustWalletCore includes
 # ${WALLET_CORE}/src -- internal TrustWalletCore files, for signer protobuf messages
 # ${WALLET_CORE}/build/local/include) -- for protobuf includes
 include_directories (${CMAKE_SOURCE_DIR} ${WALLET_CORE}/include ${WALLET_CORE}/src ${WALLET_CORE}/build/local/include)
-link_directories (${WALLET_CORE}/build/install/lib ${WALLET_CORE}/build ${WALLET_CORE}/build/trezor-crypto ${WALLET_CORE}/build/local/lib)
+link_directories (${WALLET_CORE}/build ${WALLET_CORE}/build/trezor-crypto ${WALLET_CORE}/build/local/lib)
 
-find_library(WALLET_CORE_LIB_RELEASE TrustWalletCore PATH ${WALLET_CORE}/build ${WALLET_CORE}/build/install/lib)
-find_library(WALLET_CORE_LIB_DEBUG TrustWalletCored PATH ${WALLET_CORE}/build ${WALLET_CORE}/build/install/lib)
-if (NOT WALLET_CORE_LIB_RELEASE)
+find_library(WALLET_CORE_LIB_FILE TrustWalletCore PATH ${WALLET_CORE}/build)
+if (NOT WALLET_CORE_LIB_FILE)
     message (FATAL_ERROR "TrustWalletCore library not found.  ${SETUP_MESSAGE}")
 else ()
-    if (WALLET_CORE_LIB_DEBUG)
-        set (WALLET_CORE_LIBRARIES optimized ${WALLET_CORE_LIB_RELEASE} debug ${WALLET_CORE_LIB_DEBUG})
-    else ()
-        set (WALLET_CORE_LIBRARIES ${WALLET_CORE_LIB_RELEASE})
-    endif ()
-    message ("TrustWalletCore library found here: ${WALLET_CORE_LIBRARIES}")
+    message ("TrustWalletCore library found here: ${WALLET_CORE_LIB_FILE}")
 endif ()
 
 # Create all libraries and executables in the root binary dir
@@ -45,16 +55,6 @@ else ()
 	add_compile_options (-Werror=switch)
 endif ()
 
-if (NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC"))
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-endif ()
-
-set (CMAKE_C_STANDARD 11)
-set (CMAKE_C_STANDARD_REQUIRED ON)
-
-set (CMAKE_CXX_STANDARD 14)
-set (CMAKE_CXX_STANDARD_REQUIRED ON)
-
 if (WIN32)
 	add_definitions(/bigobj)
 endif ()
@@ -71,7 +71,4 @@ SET (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${PLATFORM_LINK_FLAGS}")
 add_executable (sample sample.cpp)
 
 # link with our library, and default platform libraries
-target_link_libraries (sample ${WALLET_CORE_LIBRARIES} ${Protobuf_LIBRARIES} ${PLATFORM_LIBS})
-if (NOT WIN32)
-    target_link_libraries (TrezorCrypto)
-endif ()
+target_link_libraries (sample TrustWalletCore TrezorCrypto protobuf pthread ${PLATFORM_LIBS})

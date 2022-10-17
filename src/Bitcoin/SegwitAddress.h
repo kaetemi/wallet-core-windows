@@ -7,7 +7,7 @@
 #pragma once
 
 #include "../PublicKey.h"
-#include "../Data.h"
+#include "Data.h"
 
 #include <cstdint>
 #include <string>
@@ -26,10 +26,13 @@ class SegwitAddress {
     std::string hrp;
 
     /// Witness program version.
-    int witnessVersion;
+    byte witnessVersion;
 
     /// Witness program.
     Data witnessProgram;
+
+    // Prefix for Bitcoin Testnet Segwit addresses
+    static constexpr auto TestnetPrefix = "tb";
 
     /// Determines whether a string makes a valid Bech32 address.
     static bool isValid(const std::string& string);
@@ -40,11 +43,15 @@ class SegwitAddress {
 
     /// Initializes a Bech32 address with a human-readable part, a witness
     /// version, and a witness program.
-    SegwitAddress(std::string hrp, int witver, Data witprog)
+    SegwitAddress(std::string hrp, byte witver, Data witprog)
         : hrp(std::move(hrp)), witnessVersion(witver), witnessProgram(std::move(witprog)) {}
 
-    /// Initializes a Bech32 address with a public key and a HRP prefix.
-    SegwitAddress(const PublicKey& publicKey, int witver, std::string hrp);
+    /// Initializes a segwit-version-0 Bech32 address with a public key and a HRP prefix.
+    /// Taproot (v>=1) is not supported by this method.
+    SegwitAddress(const PublicKey& publicKey, std::string hrp);
+
+    /// Create a testnet address
+    static SegwitAddress createTestnetFromPublicKey(const PublicKey& publicKey) { return SegwitAddress(publicKey, TestnetPrefix); }
 
     /// Decodes a SegWit address.
     ///

@@ -9,22 +9,10 @@
 #include "Ethereum/Address.h"
 #include "Signer.h"
 
-using namespace TW::Theta;
-using namespace std;
+namespace TW::Theta {
 
-bool Entry::validateAddress(TWCoinType coin, const string& address, TW::byte, TW::byte, const char*) const {
-    return Ethereum::Address::isValid(address);
-}
-
-string Entry::normalizeAddress(TWCoinType coin, const string& address) const {
-    // normalized with EIP55 checksum
-    return Ethereum::Address(address).string();
-}
-
-string Entry::deriveAddress(TWCoinType coin, const PublicKey& publicKey, TW::byte, const char*) const {
-    return Ethereum::Address(publicKey).string();
-}
-
-void Entry::sign(TWCoinType coin, const TW::Data& dataIn, TW::Data& dataOut) const {
+void Entry::sign([[maybe_unused]] TWCoinType coin, const TW::Data& dataIn, TW::Data& dataOut) const {
     signTemplate<Signer, Proto::SigningInput>(dataIn, dataOut);
 }
+
+} // namespace TW::Theta
